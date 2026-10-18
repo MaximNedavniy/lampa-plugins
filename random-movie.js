@@ -1,4 +1,4 @@
-/* Випадковий фільм for Lampa, version 1.0.0. ES5. */
+/* Випадковий фільм for Lampa, version 1.1.0. ES5. */
 (function () {
     'use strict';
     if (window.lampaRandomMovie) return;
@@ -17,6 +17,29 @@
         { title: 'Трилер', id: '53' }, { title: 'Воєнний', id: '10752' },
         { title: 'Вестерн', id: '37' }
     ];
+    var countries = [
+        { title: 'Будь-яка', id: '' }, { title: 'Україна', id: 'UA' },
+        { title: 'США', id: 'US' }, { title: 'Велика Британія', id: 'GB' },
+        { title: 'Канада', id: 'CA' }, { title: 'Франція', id: 'FR' },
+        { title: 'Німеччина', id: 'DE' }, { title: 'Італія', id: 'IT' },
+        { title: 'Іспанія', id: 'ES' }, { title: 'Польща', id: 'PL' },
+        { title: 'Чехія', id: 'CZ' }, { title: 'Швеція', id: 'SE' },
+        { title: 'Норвегія', id: 'NO' }, { title: 'Данія', id: 'DK' },
+        { title: 'Фінляндія', id: 'FI' }, { title: 'Нідерланди', id: 'NL' },
+        { title: 'Бельгія', id: 'BE' }, { title: 'Ірландія', id: 'IE' },
+        { title: 'Австрія', id: 'AT' }, { title: 'Швейцарія', id: 'CH' },
+        { title: 'Австралія', id: 'AU' }, { title: 'Нова Зеландія', id: 'NZ' },
+        { title: 'Японія', id: 'JP' }, { title: 'Південна Корея', id: 'KR' },
+        { title: 'Китай', id: 'CN' }, { title: 'Гонконг', id: 'HK' },
+        { title: 'Тайвань', id: 'TW' }, { title: 'Індія', id: 'IN' },
+        { title: 'Туреччина', id: 'TR' }, { title: 'Бразилія', id: 'BR' },
+        { title: 'Аргентина', id: 'AR' }, { title: 'Мексика', id: 'MX' },
+        { title: 'Південна Африка', id: 'ZA' }
+    ];
+    function countrySetting() {
+        var id = String(read('country', ''));
+        return countries.filter(function (country) { return country.id === id; })[0] || countries[0];
+    }
     function read(key, fallback) {
         try { return L.Storage.get('random_movie_' + key, fallback); }
         catch (e) { return fallback; }
@@ -35,9 +58,13 @@
         select('Випадковий фільм', [
             { title: 'Знайти фільм', action: 'pick' },
             { title: 'Жанр: ' + label.title, action: 'genre' },
+            { title: 'Країна: ' + countrySetting().title, action: 'country' },
             { title: 'Мінімальний рейтинг: ' + (rating || 'Будь-який'), action: 'rating' }
         ], function (item) {
             if (item.action === 'pick') { restore(); pick(); }
+            if (item.action === 'country') select('Країна виробництва', countries, function (country) {
+                save('country', country.id); settings();
+            }, settings);
             if (item.action === 'genre') select('Жанр', genres, function (g) {
                 save('genre', g.id); settings();
             }, settings);
@@ -70,6 +97,8 @@
             'primary_release_date.lte': today, sort_by: 'popularity.desc'
         };
         if (genre) filter.with_genres = genre;
+        var country = countrySetting().id;
+        if (country) filter.with_origin_country = country;
         function finish() {
             active = false; state.busy = false; window.clearTimeout(timer);
         }
@@ -106,7 +135,7 @@
                 request(next, function (result) { choose(result, next, pages, remaining - 1); });
             } else {
                 finish();
-                L.Noty.show('Нових пропозицій не знайдено. Змініть жанр або мінімальний рейтинг.');
+                L.Noty.show('Нових пропозицій не знайдено. Змініть жанр, країну або мінімальний рейтинг.');
             }
         }
         request(1, function (data) {
